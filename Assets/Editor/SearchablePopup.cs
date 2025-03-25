@@ -5,31 +5,35 @@ using System.Linq;
 
 public class SearchablePopup : PopupWindowContent
 {
+    // Constants
+    private const float WindowWidth = 200f;
+    private const float WindowMaxHeight = 250f;
+    private const float EntryHeight = 24f;
+    private const float EntryCheckmarkWidth = 12f;
+    private const float EntryCheckmarkOffset = 20f;
+    private const float IconSize = 16f;
+    private const float IconPadding = 4f;
+    private const float ClearButtonOffsetX = 35f;
+    private const float ScrollViewHeight = 225f;
+
+    // Data
     private string[] options;
     private Action<int> onOptionSelected;
     private Vector2 scrollPosition;
     private int selectedIndex;
-    private GUIStyle labelStyle;
-    private GUIStyle selectedLabelStyle;
-    private Texture2D checkmarkTexture;
     private string searchQuery = string.Empty;
     private string[] filteredOptions;
+
+    // Styles and Assets
+    private static readonly GUIStyle labelStyle;
+    private static readonly GUIStyle selectedLabelStyle;
+    private Texture2D checkmarkTexture;
     private GUIContent searchIconContent;
     private GUIContent clearIconContent;
 
-    public SearchablePopup(string[] options, Action<int> onOptionSelected, int initialSelection)
+    // Static constructor for styles
+    static SearchablePopup()
     {
-        this.options = options;
-        this.onOptionSelected = onOptionSelected;
-        this.selectedIndex = initialSelection;
-        InitializeStyles();
-        LoadIcons();
-        FilterOptions();
-    }
-
-    private void InitializeStyles()
-    {
-        // Initialize the label style
         labelStyle = new GUIStyle(EditorStyles.label)
         {
             normal = { textColor = Color.white },
@@ -38,11 +42,20 @@ public class SearchablePopup : PopupWindowContent
             margin = new RectOffset(2, 2, 2, 2)
         };
 
-        // Initialize the selected label style
         selectedLabelStyle = new GUIStyle(labelStyle)
         {
             normal = { background = Texture2D.grayTexture }
         };
+    }
+
+    // Constructor
+    public SearchablePopup(string[] options, Action<int> onOptionSelected, int initialSelection)
+    {
+        this.options = options;
+        this.onOptionSelected = onOptionSelected;
+        this.selectedIndex = initialSelection;
+        LoadIcons();
+        FilterOptions();
     }
 
     private void LoadIcons()
@@ -54,19 +67,14 @@ public class SearchablePopup : PopupWindowContent
 
     private void FilterOptions()
     {
-        if (string.IsNullOrEmpty(searchQuery))
-        {
-            filteredOptions = options;
-        }
-        else
-        {
-            filteredOptions = options.Where(option => option.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
-        }
+        filteredOptions = string.IsNullOrEmpty(searchQuery)
+            ? options
+            : options.Where(option => option.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
     }
 
     public override Vector2 GetWindowSize()
     {
-        return new Vector2(200, Mathf.Min(250, (filteredOptions.Length + 1) * 24));
+        return new Vector2(WindowWidth, Mathf.Min(WindowMaxHeight, (filteredOptions.Length + 1) * EntryHeight));
     }
 
     public override void OnGUI(Rect rect)
@@ -74,55 +82,54 @@ public class SearchablePopup : PopupWindowContent
         EditorGUI.BeginChangeCheck();
         GUILayout.Space(4);
 
-        //clear button click event to prevent text field taking input
-        Rect clearButtonRect = new Rect(rect.width - 35, 4, 16f, 16f);
+        // Clear button click event
+        Rect clearButtonRect = new Rect(rect.width - ClearButtonOffsetX, IconPadding, IconSize, IconSize);
         if (Event.current.type == EventType.MouseDown && clearButtonRect.Contains(Event.current.mousePosition))
         {
             searchQuery = string.Empty;
             FilterOptions();
-            // The click is intended for the button area – consume it so nothing else reacts.
             Event.current.Use();
         }
 
-        //draw Search field
+        // Draw search text field
         searchQuery = GUILayout.TextField(searchQuery, EditorStyles.toolbarTextField, GUILayout.ExpandWidth(true));
         if (EditorGUI.EndChangeCheck())
         {
             FilterOptions();
         }
+
         GUILayout.Space(2);
 
-        // Draw the clear button
-        clearIconContent = EditorGUIUtility.IconContent("winbtn_win_close");
+        // Draw the clear icon
         if (!string.IsNullOrEmpty(searchQuery))
         {
             GUI.Label(clearButtonRect, clearIconContent, GUIStyle.none);
         }
 
         // Draw the search icon
-        float iconSize = 16f; 
-        Rect iconRect = new Rect(rect.width - iconSize - 4, 3, iconSize, iconSize);
+        Rect iconRect = new Rect(rect.width - IconSize - IconPadding, IconPadding - 1, IconSize, IconSize);
         GUI.Label(iconRect, searchIconContent);
 
         // Scrollable list of options
-        scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(200), GUILayout.Height(225));
+        scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(WindowWidth), GUILayout.Height(ScrollViewHeight));
 
         for (int i = 0; i < filteredOptions.Length; i++)
         {
             GUILayout.BeginHorizontal();
 
-            // Draw the checkmark for the selected item
-            if (Array.IndexOf(options, filteredOptions[i]) == selectedIndex)
+            // Draw checkmark
+            bool isSelected = Array.IndexOf(options, filteredOptions[i]) == selectedIndex;
+            if (isSelected)
             {
-                GUILayout.Label(new GUIContent(checkmarkTexture), GUILayout.Width(12));
+                GUILayout.Label(new GUIContent(checkmarkTexture), GUILayout.Width(EntryCheckmarkWidth));
             }
             else
             {
-                GUILayout.Space(20);
+                GUILayout.Space(EntryCheckmarkOffset);
             }
 
-            // Draw the option label
-            if (GUILayout.Button(filteredOptions[i], Array.IndexOf(options, filteredOptions[i]) == selectedIndex ? selectedLabelStyle: labelStyle))
+            // Draw option label
+            if (GUILayout.Button(filteredOptions[i], isSelected ? selectedLabelStyle : labelStyle))
             {
                 selectedIndex = Array.IndexOf(options, filteredOptions[i]);
                 onOptionSelected?.Invoke(selectedIndex);

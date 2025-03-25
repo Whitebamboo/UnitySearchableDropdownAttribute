@@ -2,13 +2,10 @@ using UnityEngine;
 
 public class ExampleComponent : MonoBehaviour
 {
-    [SearchableDropdown(typeof(ExampleOptionsProvider))]
+    [SearchableDropdown(nameof(GetOptions))]
     public string selectedOption;
-}
 
-public static class ExampleOptionsProvider
-{
-    public static string[] GetOptions()
+    public string[] GetOptions()
     {
         return new[] { "Apple", "Banana", "Cherry", "Date", "Elderberry", "Fig", "Grape", "Honeydew", "Kiwi", "Lemon", "Mango" };
     }

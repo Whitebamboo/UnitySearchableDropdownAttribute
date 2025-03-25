@@ -4,10 +4,18 @@ using UnityEngine;
 [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
 public class SearchableDropdownAttribute : PropertyAttribute
 {
-    public Type OptionsProviderType { get; }
+    public string MemberName { get; private set; }
 
-    public SearchableDropdownAttribute(Type optionsProviderType)
+    public object[] Parameters { get; private set; }
+
+    public SearchableDropdownAttribute(string memberName)
     {
-        OptionsProviderType = optionsProviderType;
+        MemberName = memberName;
+    }
+
+    public SearchableDropdownAttribute(string memberName, params object[] parameters)
+    {
+        MemberName = memberName;
+        Parameters = parameters;
     }
 }
